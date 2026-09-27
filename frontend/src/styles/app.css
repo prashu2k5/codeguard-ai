@@ -326,11 +326,12 @@ body {
   inset: 0;
   background: rgba(15, 23, 42, 0.45);
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
   z-index: 100;
   padding: 20px;
   animation: fade-in 0.15s ease;
+  overflow-y: auto;
 }
 
 @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
@@ -341,11 +342,14 @@ body {
   padding: 28px;
   width: 100%;
   max-width: 480px;
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
   box-shadow: 0 20px 60px rgba(0,0,0,0.18);
   display: flex;
   flex-direction: column;
   gap: 20px;
   animation: slide-up 0.2s ease;
+  margin: auto;
 }
 
 @keyframes slide-up {
@@ -1449,4 +1453,618 @@ body {
   color: #94a3b8;
   line-height: 1.5;
   margin: 0;
+}
+
+/* =========================================================
+   Phase 7 — Risk Feedback Loop styles
+   ========================================================= */
+
+/* Cold Zone badge */
+.badge--cold {
+  background: #0f2940;
+  color: #7dd3fc;
+  border: 1px solid #0369a155;
+  font-size: 10px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* Cold Zone table row highlight */
+.table-row--cold {
+  background: #0c1a2e;
+}
+
+.table-row--cold:hover {
+  background: #0f2940;
+}
+
+/* Incident count cell */
+.incident-count {
+  color: #ef4444;
+  font-weight: 700;
+  font-size: 12px;
+}
+
+.incident-none {
+  color: #475569;
+  font-size: 12px;
+}
+
+/* Verified evidence block in FileDetail */
+.detail-evidence-block {
+  border-left: 3px solid #2563eb;
+}
+
+.evidence-source-note {
+  font-size: 11px;
+  color: #64748b;
+  margin-bottom: 10px;
+  font-style: italic;
+}
+
+.evidence-none {
+  font-size: 12px;
+  color: #64748b;
+  font-style: italic;
+  padding: 8px 0;
+}
+
+.evidence-count {
+  font-size: 13px;
+  color: #f1f5f9;
+  margin-bottom: 8px;
+}
+
+.evidence-toggle-btn {
+  background: #1e293b;
+  color: #94a3b8;
+  border: 1px solid #334155;
+  border-radius: 6px;
+  padding: 4px 12px;
+  font-size: 11px;
+  cursor: pointer;
+  margin-bottom: 10px;
+}
+
+.evidence-toggle-btn:hover {
+  background: #334155;
+  color: #f1f5f9;
+}
+
+.evidence-card {
+  background: #0f172a;
+  border: 1px solid #1e3a5f;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 8px;
+}
+
+.evidence-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.evidence-verified-stamp {
+  font-size: 10px;
+  font-weight: 700;
+  color: #4ade80;
+  background: #14532d22;
+  border: 1px solid #4ade8044;
+  padding: 2px 7px;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.evidence-date {
+  font-size: 10px;
+  color: #64748b;
+}
+
+.evidence-source {
+  font-size: 10px;
+  color: #475569;
+  margin-top: 6px;
+  font-style: italic;
+}
+
+/* Observed risk block in FileDetail */
+.detail-observed-block {
+  border-left: 3px solid #7c3aed;
+}
+
+.detail-why-text {
+  font-size: 12px;
+  color: #94a3b8;
+  line-height: 1.6;
+  margin: 6px 0 0;
+}
+
+.detail-formula {
+  font-family: "Consolas", "Courier New", monospace;
+  font-size: 10px;
+  color: #64748b;
+  background: #0f172a;
+  border: 1px solid #1e293b;
+  border-radius: 6px;
+  padding: 8px 10px;
+  margin-top: 8px;
+  white-space: pre-wrap;
+  line-height: 1.7;
+}
+
+/* =========================================================
+   Phase 8 — Final Integration & Demo Polish
+   ========================================================= */
+
+/* ── Header brand ────────────────────────────────── */
+.header-brand { display: flex; flex-direction: column; justify-content: center; }
+
+.header-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+.header-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.header-status-label {
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+/* ── Section subtitles ───────────────────────────── */
+.section-subtitle {
+  display: block;
+  font-size: 11px;
+  font-weight: 400;
+  color: #64748b;
+  margin-top: 2px;
+}
+
+/* ── Cold zone banner ────────────────────────────── */
+.cold-zone-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #0c1a2e;
+  border: 1px solid #1e3a5f;
+  border-left: 4px solid #7dd3fc;
+  border-radius: 8px;
+  padding: 12px 16px;
+}
+.cold-zone-banner-icon { font-size: 18px; }
+.cold-zone-banner-text { font-size: 13px; color: #cbd5e1; }
+.cold-zone-banner-text strong { color: #7dd3fc; }
+
+/* ── Memory what-is block ────────────────────────── */
+.mem-what-is {
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 12px;
+}
+.mem-what-is-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+}
+.mem-what-is-item {
+  display: flex;
+  gap: 10px;
+}
+.mem-what-is-icon {
+  font-size: 18px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.mem-what-is-item strong {
+  display: block;
+  font-size: 12px;
+  color: #e2e8f0;
+  margin-bottom: 4px;
+}
+.mem-what-is-item p {
+  font-size: 11px;
+  color: #94a3b8;
+  line-height: 1.5;
+}
+
+/* ── Memory verify row ───────────────────────────── */
+.mem-verify-row { margin: 8px 0; }
+.mem-verify-stage {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  padding: 3px 10px;
+  border-radius: 999px;
+}
+.mem-verify-stage--pass {
+  background: #14532d22;
+  border: 1px solid #4ade8044;
+  color: #4ade80;
+}
+
+/* ── Memory value inline ─────────────────────────── */
+.mem-value-inline {
+  font-size: 12px;
+  color: #94a3b8;
+  font-family: "Consolas", "Courier New", monospace;
+}
+
+/* ── Memory empty state ──────────────────────────── */
+.mem-empty-title {
+  font-size: 14px;
+  color: #94a3b8;
+  margin-bottom: 8px;
+}
+.mem-empty-steps {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+  padding: 10px 14px;
+  background: #0f172a;
+  border-radius: 6px;
+  font-size: 12px;
+  color: #94a3b8;
+}
+.mem-result-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* ── System Status panel ─────────────────────────── */
+.status-panel {
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 10px;
+  padding: 18px 20px;
+}
+.status-panel--loading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #94a3b8;
+  font-size: 13px;
+}
+.status-panel--error {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: #1e0a0a;
+  border-color: #ef444455;
+}
+.status-offline-icon {
+  color: #ef4444;
+  font-size: 20px;
+  margin-top: 2px;
+}
+.status-error-msg {
+  font-size: 12px;
+  color: #94a3b8;
+  margin-top: 4px;
+}
+.status-error-msg code {
+  font-family: monospace;
+  color: #60a5fa;
+}
+.status-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.status-panel-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #e2e8f0;
+}
+.status-panel-version {
+  font-size: 11px;
+  color: #64748b;
+  margin-left: 8px;
+}
+.status-panel-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.status-mem-count {
+  font-size: 11px;
+  color: #94a3b8;
+}
+.status-reset-btn {
+  background: #0f172a;
+  color: #94a3b8;
+  border: 1px solid #334155;
+  border-radius: 6px;
+  padding: 4px 12px;
+  font-size: 11px;
+  cursor: pointer;
+}
+.status-reset-btn:hover { background: #334155; color: #e2e8f0; }
+.status-reset-msg {
+  font-size: 11px;
+  color: #4ade80;
+  margin-bottom: 10px;
+  padding: 6px 10px;
+  background: #14532d22;
+  border-radius: 6px;
+}
+.status-capabilities {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 6px;
+}
+.status-cap-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  background: #0f172a;
+  border-radius: 6px;
+  cursor: default;
+}
+.status-cap-icon {
+  font-size: 12px;
+  font-weight: 700;
+  width: 18px;
+  text-align: center;
+  flex-shrink: 0;
+}
+.status-cap-icon--ok  { color: #4ade80; }
+.status-cap-icon--warn { color: #f59e0b; }
+.status-cap-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #e2e8f0;
+  min-width: 160px;
+}
+.status-cap-desc {
+  font-size: 11px;
+  color: #64748b;
+}
+.status-disclaimer {
+  font-size: 10px;
+  color: #475569;
+  margin-top: 12px;
+  font-style: italic;
+}
+
+/* ── Demo Guide ──────────────────────────────────── */
+.guide-page {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+.guide-header {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.guide-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #f1f5f9;
+}
+.guide-subtitle {
+  font-size: 14px;
+  color: #94a3b8;
+  line-height: 1.6;
+}
+.guide-start-btn {
+  display: inline-block;
+  margin-top: 8px;
+  background: #2563eb;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 22px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  width: fit-content;
+}
+.guide-start-btn:hover { background: #1d4ed8; }
+.guide-start-btn--bottom { margin-top: 0; }
+.guide-principle {
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-left: 4px solid #2563eb;
+  border-radius: 8px;
+  padding: 14px 16px;
+  font-size: 13px;
+  color: #cbd5e1;
+  line-height: 1.6;
+}
+.guide-section {
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 10px;
+  padding: 20px;
+}
+.guide-section-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #e2e8f0;
+  margin-bottom: 16px;
+}
+.guide-flow {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0;
+  max-width: 320px;
+}
+.guide-flow-node {
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 6px;
+  padding: 6px 14px;
+  font-size: 12px;
+  color: #cbd5e1;
+  font-weight: 500;
+}
+.guide-flow-arrow {
+  font-size: 14px;
+  color: #475569;
+  padding: 2px 14px;
+  line-height: 1;
+}
+.guide-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.guide-step {
+  display: flex;
+  gap: 14px;
+  background: #0f172a;
+  border: 1px solid #1e293b;
+  border-radius: 8px;
+  padding: 14px;
+}
+.guide-step-num {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 800;
+  color: #fff;
+  flex-shrink: 0;
+}
+.guide-step-body { flex: 1; }
+.guide-step-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.guide-step-icon { font-size: 16px; }
+.guide-step-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #f1f5f9;
+}
+.guide-step-description {
+  font-size: 13px;
+  color: #e2e8f0;
+  margin-bottom: 4px;
+}
+.guide-step-detail {
+  font-size: 11px;
+  color: #94a3b8;
+  margin-bottom: 4px;
+  line-height: 1.5;
+}
+.guide-step-action {
+  font-size: 11px;
+  color: #60a5fa;
+}
+.guide-safety-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 10px;
+}
+.guide-safety-card {
+  background: #0f172a;
+  border: 1px solid #1e293b;
+  border-radius: 8px;
+  padding: 12px;
+}
+.guide-safety-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: #4ade80;
+  margin-bottom: 6px;
+}
+.guide-safety-text {
+  font-size: 11px;
+  color: #94a3b8;
+  line-height: 1.5;
+}
+.guide-formula {
+  font-family: "Consolas", "Courier New", monospace;
+  font-size: 11px;
+  color: #94a3b8;
+  background: #0f172a;
+  border: 1px solid #1e293b;
+  border-radius: 6px;
+  padding: 14px 16px;
+  white-space: pre-wrap;
+  line-height: 1.7;
+}
+
+/* ── Chart dual-bar improvements ─────────────────── */
+.chart-legend {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #1e293b;
+}
+.chart-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: #94a3b8;
+}
+.chart-legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+.chart-bars {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.chart-bar-track--observed {
+  position: relative;
+}
+.chart-bar-delta {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  border-radius: 0 3px 3px 0;
+}
+.chart-scores {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  min-width: 80px;
+}
+.chart-score-observed {
+  font-size: 11px;
+  font-weight: 600;
+}
+.chart-cold-icon {
+  font-size: 10px;
+  color: #7dd3fc;
 }

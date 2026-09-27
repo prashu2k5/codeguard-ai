@@ -30,6 +30,130 @@ function explain(file) {
   return parts;
 }
 
+// ---------------------------------------------------------------------------
+// Phase 7 — Verified incident evidence panel
+// ---------------------------------------------------------------------------
+function VerifiedIncidentEvidence({ file }) {
+  const count = file.verified_incident_count ?? 0;
+  const evidence = file.verified_incident_evidence ?? [];
+  const [expanded, setExpanded] = useState(false);
+
+  return (
+    <div className="detail-risk-block detail-evidence-block">
+      <div className="detail-block-label">Verified Incident Evidence</div>
+      <p className="evidence-source-note">
+        Source: Verified Memory only — independently verified bugs (before=FAIL, after=PASS, suite=PASS).
+      </p>
+
+      {count === 0 ? (
+        <p className="evidence-none">No verified incident evidence yet.</p>
+      ) : (
+        <>
+          <p className="evidence-count">
+            <strong>{count}</strong> independently verified incident{count !== 1 ? 's' : ''} recorded for this file.
+          </p>
+          <button
+            className="evidence-toggle-btn"
+            onClick={() => setExpanded(!expanded)}
+          >
+            {expanded ? '▲ Hide incidents' : '▼ Show incidents'}
+          </button>
+          {expanded && evidence.map((inc, i) => (
+            <div key={inc.id ?? i} className="evidence-card">
+              <div className="evidence-card-header">
+                <span className="evidence-verified-stamp">✓ Independently Verified</span>
+                <span className="evidence-date">{inc.created_at ? new Date(inc.created_at).toLocaleDateString() : ''}</span>
+              </div>
+              <div className="invest-section">
+                <span className="invest-label">Problem</span>
+                <p className="invest-value">{inc.problem}</p>
+              </div>
+              <div className="invest-section">
+                <span className="invest-label">Root Cause</span>
+                <p className="invest-value">{inc.root_cause}</p>
+              </div>
+              {inc.function_name && (
+                <div className="invest-section">
+                  <span className="invest-label">Function</span>
+                  <span className="invest-value">{inc.function_name}</span>
+                </div>
+              )}
+              <p className="evidence-source">{inc.source}</p>
+            </div>
+          ))}
+        </>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Phase 7 — Observed risk panel
+// ---------------------------------------------------------------------------
+function ObservedRiskPanel({ file }) {
+  const predictedRisk = file.risk_score;
+  const incidentScore = file.incident_score ?? 0;
+  const observedRisk  = file.observed_risk  ?? file.risk_score;
+  const observedLevel = file.observed_risk_level ?? file.risk_level;
+  const LEVEL_COLOR = { High: '#ef4444', Medium: '#f59e0b', Low: '#22c55e' };
+  const color = LEVEL_COLOR[observedLevel] ?? '#94a3b8';
+
+  return (
+    <div className="detail-risk-block detail-observed-block">
+      <div className="detail-block-label">Observed Risk (Phase 7)</div>
+
+      <div className="detail-score-row">
+        <div className="detail-score-circle" style={{ borderColor: color }}>
+          <span className="detail-score-num" style={{ color }}>{observedRisk.toFixed(1)}</span>
+          <span className="detail-score-label">/ 100</span>
+        </div>
+        <span className={`badge badge--lg badge--${observedLevel.toLowerCase()}`}>
+          {observedLevel} Risk
+        </span>
+        {file.is_cold_zone && (
+          <span className="badge badge--cold" title="Cold Zone — predicted risk without verified incident evidence">
+            ❄ Cold Zone
+          </span>
+        )}
+      </div>
+
+      <div className="detail-metrics">
+        <div className="metric">
+          <span className="metric-label">Predicted Risk</span>
+          <span className="metric-value">{predictedRisk.toFixed(1)}</span>
+        </div>
+        <div className="metric">
+          <span className="metric-label">Incident Score</span>
+          <span className="metric-value">+{incidentScore.toFixed(1)}</span>
+        </div>
+        <div className="metric">
+          <span className="metric-label">Verified Count</span>
+          <span className="metric-value">{file.verified_incident_count ?? 0}</span>
+        </div>
+        <div className="metric">
+          <span className="metric-label">Observed Risk</span>
+          <span className="metric-value">{observedRisk.toFixed(1)}</span>
+        </div>
+      </div>
+
+      {file.risk_explanation && (
+        <div className="detail-why">
+          <h4 className="detail-why-title">Risk Explanation</h4>
+          <p className="detail-why-text">{file.risk_explanation}</p>
+        </div>
+      )}
+
+      {file.risk_formula && (
+        <pre className="detail-formula">{file.risk_formula}</pre>
+      )}
+
+      <p className="detail-note">
+        Observed risk = predicted risk + verified incident evidence. Heuristic estimate only.
+      </p>
+    </div>
+  );
+}
+
 const LEVEL_COLOR      = { High: '#ef4444', Medium: '#f59e0b', Low: '#22c55e' };
 const CONFIDENCE_COLOR = { High: '#16a34a', Medium: '#d97706', Low: '#dc2626' };
 
@@ -438,9 +562,9 @@ export default function FileDetail({ file, onClose }) {
           <button className="detail-close" onClick={onClose} aria-label="Close">✕</button>
         </div>
 
-        {/* ── Risk estimate ── */}
+        {/* ── Predicted risk (Phase 1 — unchanged) ── */}
         <div className="detail-risk-block">
-          <div className="detail-block-label">Risk Estimate</div>
+          <div className="detail-block-label">Predicted Risk (Phase 1)</div>
 
           <div className="detail-score-row">
             <div className="detail-score-circle" style={{ borderColor: color }}>
@@ -479,9 +603,19 @@ export default function FileDetail({ file, onClose }) {
           </div>
 
           <p className="detail-note">
-            Score = 35% complexity + 35% churn + 30% test gap. Heuristic estimate only.
+            Predicted risk = 35% complexity + 35% churn + 30% test gap. Heuristic estimate only.
           </p>
         </div>
+
+        <div className="detail-divider" />
+
+        {/* ── Phase 7: Verified incident evidence ── */}
+        <VerifiedIncidentEvidence file={file} />
+
+        <div className="detail-divider" />
+
+        {/* ── Phase 7: Observed risk ── */}
+        {file.observed_risk != null && <ObservedRiskPanel file={file} />}
 
         <div className="detail-divider" />
 

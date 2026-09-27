@@ -22,6 +22,7 @@ from backend.memory import (
     search as memory_search,
     count as memory_count,
     VerifiedIncident,
+    DB_PATH as MEMORY_DB_PATH,
 )
 from backend.memory_context import search_for_similar, memory_context as build_memory_context
 from backend.cold_zones import (
@@ -33,15 +34,15 @@ from backend.cold_zones import (
     get_investigated_files,
     COLD_ZONE_THRESHOLD,
 )
+from backend.risk_feedback import enrich_with_feedback
 
 app = FastAPI(
-    title="Code Health & Risk Scanner",
+    title="CodeGuard AI",
     description=(
-        "A heuristic tool that scans local Python repositories and estimates "
-        "file-level risk based on code complexity, git churn, and test coverage. "
-        "All scores are estimates — not predictions or guarantees."
+        "CodeGuard AI — Find risk. Investigate bugs. Verify fixes. Remember knowledge. "
+        "All risk scores are heuristic estimates — not predictions or guarantees."
     ),
-    version="0.1.0",
+    version="1.0.0",
 )
 
 app.add_middleware(
@@ -102,6 +103,12 @@ class ColdZonesRequest(BaseModel):
     files: list[dict] = []
 
 
+class RiskFeedbackRequest(BaseModel):
+    repo_path: str
+    # Optionally accept pre-computed files list to avoid a double scan
+    files: list[dict] = []
+
+
 # ---------------------------------------------------------------------------
 # Routes
 # ---------------------------------------------------------------------------
@@ -111,12 +118,22 @@ def root() -> dict:
     """Health check — confirms the scanner is running."""
     return {
         "status": "ok",
-        "service": "Code Health & Risk Scanner",
-        "version": "0.1.0",
+        "service": "CodeGuard AI",
+        "version": "1.0.0",
         "message": (
-            "Scanner is running. "
+            "CodeGuard AI is running. "
             "POST /scan with {\"repo_path\": \"<path>\"} to analyse a repository."
         ),
+        "phases": {
+            "phase_1": "Code Health & Risk Scanner",
+            "phase_2": "React Dashboard",
+            "phase_3": "AI Bug Investigation",
+            "phase_4": "Independent Fix Verification",
+            "phase_5": "Verified Memory",
+            "phase_6": "Memory Context & Similar Incidents",
+            "phase_7": "Risk Feedback Loop",
+            "phase_8": "Final Integration & Demo Polish",
+        },
         "disclaimer": (
             "Risk scores are heuristic estimates only — "
             "not predictions of failures or guarantees of code quality."
@@ -627,5 +644,201 @@ def cold_zones_endpoint(request: ColdZonesRequest) -> dict:
             "They identify areas with elevated estimated risk where the system "
             "has not yet recorded a verified incident or completed an investigation. "
             "Use wording: 'Potentially under-investigated risk area.'"
+        ),
+    }
+
+
+@app.post("/risk-feedback")
+def risk_feedback_endpoint(request: RiskFeedbackRequest) -> dict:
+    """
+    Return Phase 7 risk feedback for a repository's files.
+
+    For each file this endpoint returns:
+      - All Phase 1 heuristic signals (unchanged)
+      - verified_incident_count  : PASS incidents from Verified Memory
+      - verified_incident_evidence: summaries of those incidents
+      - incident_score           : additive score (min(30, count × 10))
+      - observed_risk            : predicted_risk + incident_score, capped at 100
+      - observed_risk_level      : Low | Medium | High
+      - is_cold_zone             : True when risk ≥ 35, 0 incidents, uninvestigated
+      - risk_explanation         : human-readable explanation
+
+    SAFETY
+    ------
+    Verified incidents come ONLY from Verified Memory (SQLite). Only incidents
+    that passed the full verification gate (before=FAIL, after=PASS,
+    suite=PASS, verification_result=PASS) are counted.
+    Non-PASS incidents are never counted as evidence.
+
+    Formula
+    -------
+    predicted_risk = 0.35×complexity + 0.35×churn + 0.30×test_gap   [Phase 1]
+    incident_score = min(30, verified_incident_count × 10)           [Phase 7]
+    observed_risk  = min(100, predicted_risk + incident_score)        [Phase 7]
+
+    Body
+    ----
+    {
+        "repo_path": "demo_repo",
+        "files": []     // optional — pass pre-computed scan results
+    }
+
+    Response
+    --------
+    {
+        "files": [
+            {
+                "file": "...",
+                // Phase 1 fields (unchanged)
+                "complexity_score": 0–100,
+                "git_churn_commits": <int>,
+                "git_churn_score": 0–100,
+                "test_coverage_pct": 0–100,
+                "risk_score": 0–100,
+                "risk_level": "Low|Medium|High",
+                // Phase 7 fields (new)
+                "verified_incident_count": <int>,
+                "verified_incident_evidence": [...],
+                "incident_score": 0–30,
+                "observed_risk": 0–100,
+                "observed_risk_level": "Low|Medium|High",
+                "is_cold_zone": true|false,
+                "risk_explanation": "...",
+                "risk_formula": "...",
+                "disclaimer": "..."
+            }
+        ],
+        "summary": {
+            "files_scanned": <int>,
+            "total_verified_incidents": <int>,
+            "cold_zone_count": <int>,
+            "formula_note": "...",
+            "disclaimer": "..."
+        }
+    }
+    """
+    repo_path = request.repo_path.strip()
+    if not repo_path:
+        raise HTTPException(status_code=400, detail="repo_path must not be empty.")
+
+    files = request.files
+    if not files:
+        root = Path(repo_path)
+        if not root.is_absolute():
+            root = Path.cwd() / root
+        root = root.resolve()
+
+        if not root.exists() or not root.is_dir():
+            raise HTTPException(status_code=404, detail=f"Repo path not found: {root}")
+
+        try:
+            # Use raw scan without Phase 7 enrichment to avoid double enrichment
+            from backend.scanner import scan_repository as _scan
+            raw = _scan(str(root))
+            # raw["files"] already has Phase 7 fields from scanner.py integration
+            # but we return them directly here for the dedicated endpoint
+            files = raw.get("files", [])
+        except Exception as exc:
+            raise HTTPException(status_code=500, detail=f"Scan failed: {exc}")
+
+    # If caller passed raw Phase 1 files (no Phase 7 fields yet), enrich them
+    if files and "verified_incident_count" not in files[0]:
+        try:
+            files = enrich_with_feedback(files, db_path=MEMORY_DB_PATH)
+        except Exception as exc:
+            raise HTTPException(status_code=500, detail=f"Risk feedback enrichment failed: {exc}")
+
+    total_verified = sum(f.get("verified_incident_count", 0) for f in files)
+    cold_zone_count = sum(1 for f in files if f.get("is_cold_zone", False))
+
+    return {
+        "files": files,
+        "summary": {
+            "files_scanned":          len(files),
+            "total_verified_incidents": total_verified,
+            "cold_zone_count":        cold_zone_count,
+            "formula_note": (
+                "predicted_risk = 0.35×complexity + 0.35×churn + 0.30×test_gap  [Phase 1]\n"
+                "incident_score = min(30, verified_incident_count × 10)          [Phase 7]\n"
+                "observed_risk  = min(100, predicted_risk + incident_score)       [Phase 7]"
+            ),
+            "disclaimer": (
+                "All risk scores are heuristic estimates — not predictions of future failures. "
+                "Verified incidents increase evidence weight but are NOT proof of future bugs. "
+                "Only incidents from Verified Memory (independently verified by automated tests) "
+                "are counted as evidence."
+            ),
+        },
+    }
+
+
+# ---------------------------------------------------------------------------
+# Demo support endpoints (Phase 8)
+# ---------------------------------------------------------------------------
+
+@app.get("/demo/status")
+def demo_status() -> dict:
+    """
+    Return overall system status for the demo presentation panel.
+
+    All capability flags reflect what is actually implemented and tested —
+    not aspirational features.
+
+    This endpoint never modifies state.
+    """
+    verified_count = 0
+    try:
+        verified_count = memory_count()
+    except Exception:
+        pass
+
+    return {
+        "system": "CodeGuard AI",
+        "version": "1.0.0",
+        "capabilities": {
+            "code_health_scan":         {"status": "operational", "description": "Heuristic risk scoring (complexity + churn + test gap)"},
+            "bug_investigation":        {"status": "operational", "description": "AI-assisted or heuristic fallback bug analysis"},
+            "independent_verification": {"status": "operational", "description": "Before/fix/regression test gate — fixes only pass all three stages"},
+            "verified_memory":          {"status": "operational", "description": "SQLite-backed persistent store — PASS-only incidents"},
+            "memory_context":           {"status": "operational", "description": "Keyword-based similar incident retrieval with re-verify warnings"},
+            "risk_feedback_loop":       {"status": "operational", "description": "Verified incidents add transparent, capped evidence to risk score"},
+            "cold_zone_detection":      {"status": "operational", "description": "Flags high-risk files with no verified incidents yet"},
+        },
+        "verified_incidents_stored": verified_count,
+        "investigated_files_this_session": sorted(list(get_investigated_files())),
+        "safety_principles": [
+            "Verified incidents come ONLY from the automated test verification gate.",
+            "Non-PASS incidents are never stored.",
+            "Memory is evidence — not automatic truth.",
+            "Phase 1 risk_score is never silently changed by Phase 7.",
+            "Fix verification always restores the original file after testing.",
+        ],
+        "disclaimer": (
+            "All risk scores are heuristic estimates — not predictions of future failures."
+        ),
+    }
+
+
+@app.post("/demo/reset-session")
+def demo_reset_session() -> dict:
+    """
+    Reset the in-memory investigation session state.
+
+    SAFETY: This resets ONLY the in-memory set of investigated files for the
+    current server session. It does NOT:
+      - delete any verified incidents from memory.db
+      - create any fake incidents
+      - bypass the verification safety gate
+      - modify any source files
+
+    Use this before a fresh demo run so cold-zone detection starts clean.
+    """
+    reset_investigated()
+    return {
+        "reset": True,
+        "message": "Session investigation state cleared. Verified Memory is unchanged.",
+        "warning": (
+            "This reset affects only the in-memory session state. "
+            "Verified Memory (SQLite) is permanently preserved and was not modified."
         ),
     }

@@ -21,6 +21,22 @@ Each component is normalised to [0, 100] before weighting:
   - test_gap_score   : 100 − coverage_percentage  (higher gap = riskier)
 
 The final risk_score is clamped to [0, 100].
+
+Phase 7 extension (risk feedback loop)
+---------------------------------------
+When db_path is provided (or the default Verified Memory database exists),
+scan_repository() also calls enrich_with_feedback() to add per-file fields:
+  - verified_incident_count   : PASS incidents from Verified Memory for this file
+  - verified_incident_evidence: lightweight summaries of those incidents
+  - incident_score            : additive score contribution (min(30, count × 10))
+  - observed_risk             : min(100, risk_score + incident_score)
+  - observed_risk_level       : Low | Medium | High based on observed_risk
+  - is_cold_zone              : True when risk ≥ 35, 0 incidents, not investigated
+  - risk_explanation          : human-readable explanation of all signals
+  - risk_formula              : transparent formula documentation
+
+The Phase 1 risk_score and risk_level are NEVER modified — only new fields
+are added so downstream code that reads risk_score remains unaffected.
 """
 
 from __future__ import annotations
@@ -28,7 +44,7 @@ from __future__ import annotations
 import subprocess
 import sys
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 from radon.complexity import cc_visit, average_complexity
 from radon.metrics import mi_visit
@@ -190,18 +206,20 @@ def _risk_level(score: float) -> str:
 # Public API
 # ---------------------------------------------------------------------------
 
-def scan_repository(repo_path: str) -> dict[str, Any]:
+def scan_repository(repo_path: str, db_path: Optional[Path] = None) -> dict[str, Any]:
     """
     Scan all Python files in a local repository and return risk scores.
 
     Parameters
     ----------
     repo_path : absolute or relative path to the repository root
+    db_path   : optional path to Verified Memory database for Phase 7
+                enrichment (defaults to the production memory.db)
 
     Returns
     -------
     dict with keys:
-        files   : list of per-file result dicts
+        files   : list of per-file result dicts (Phase 1 + Phase 7 fields)
         summary : aggregate statistics
     """
     root = Path(repo_path).resolve()
@@ -274,10 +292,23 @@ def scan_repository(repo_path: str) -> dict[str, Any]:
             }
         )
 
+    # Phase 7: enrich each file result with verified incident feedback
+    try:
+        from backend.risk_feedback import enrich_with_feedback
+        from backend.memory import DB_PATH as _DEFAULT_DB
+        _db = db_path if db_path is not None else _DEFAULT_DB
+        results = enrich_with_feedback(results, db_path=_db)
+    except Exception:
+        # Enrichment failure must NEVER break the base scan results
+        pass
+
     # Summary
     scores = [r["risk_score"] for r in results]
     avg_risk = round(sum(scores) / len(scores), 2) if scores else 0.0
     top_files = sorted(results, key=lambda r: r["risk_score"], reverse=True)[:3]
+
+    # Count cold zones in the enriched results
+    cold_zone_count = sum(1 for r in results if r.get("is_cold_zone", False))
 
     return {
         "files": results,
@@ -285,10 +316,13 @@ def scan_repository(repo_path: str) -> dict[str, Any]:
             "files_scanned": len(results),
             "average_risk": avg_risk,
             "highest_risk_files": [f["file"] for f in top_files],
+            "cold_zone_count": cold_zone_count,
             "disclaimer": (
                 "Risk scores are heuristic estimates based on code complexity, "
                 "git churn, and test coverage. They are NOT predictions of "
-                "failures or guarantees of code quality."
+                "failures or guarantees of code quality. "
+                "Verified incident counts come from independently verified bugs "
+                "in Verified Memory only."
             ),
         },
     }
